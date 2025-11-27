@@ -22,18 +22,17 @@
             display: block !important;
         }
     </style>
-    <!-- Three.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
     <canvas id="canvas3d"></canvas>
-    <div id="fps" style="position: fixed; top: 10px; left: 10px; color: lime; font-family: monospace; font-size: 20px; z-index: 10000; background: rgba(0,0,0,0.5); padding: 5px;"></div>
+    <div id="fps" style="position: fixed; top: 10px; left: 10px; color: lime; font-family: monospace; font-size: 20px; z-index: 10000; background: rgba(0,0,0,0.5); padding: 5px; display: none;"></div>
 
     <script>
         // WebGL 3D Text Screensaver using Three.js
         let scene, camera, renderer, textMesh, font;
         let x = 0, y = 0, z = 0;
-        let velocityX = 2, velocityY = 1.5, velocityZ = 1;
+        let velocityX = 2, velocityY = 1.5, velocityZ = 0;
         let wobbleRotation = { x: 0, y: 0, z: 0 };
         let seesawAngle = 0;
         let animationId = null;
@@ -49,7 +48,7 @@
         const color = urlParams.get('color') || '#ff6060';
         const resolution = parseFloat(urlParams.get('resolution') || '50');
         const gradientType = urlParams.get('gradient') || null;
-        const debugMode = urlParams.get('debug') === 'true'; // Add debug parameter
+        const debugMode = urlParams.get('debug') === 'true';
 
         const TARGET_FPS = 60;
         const FRAME_INTERVAL = 1000 / TARGET_FPS;
@@ -171,144 +170,143 @@
             textGeometry.center();
             
             // Create materials - support both solid colors and gradients
-let materials;
+            let materials;
 
-if (gradientType) {
-    // Use vertex colors for gradients
-    const bbox = textGeometry.boundingBox;
-    const textHeight = bbox.max.y - bbox.min.y;
-    const minY = bbox.min.y;
-    
-    // Get gradient colors
-    let colorStops;
-    switch(gradientType) {
-        case 'rainbow':
-            colorStops = [
-                { stop: 0, color: new THREE.Color('#E40303') },
-                { stop: 0.2, color: new THREE.Color('#FF8C00') },
-                { stop: 0.4, color: new THREE.Color('#FFED00') },
-                { stop: 0.6, color: new THREE.Color('#008026') },
-                { stop: 0.8, color: new THREE.Color('#24408E') },
-                { stop: 1, color: new THREE.Color('#732982') }
-            ];
-            break;
-        case 'trans':
-            colorStops = [
-                { stop: 0, color: new THREE.Color('#5BCEFA') },
-                { stop: 0.25, color: new THREE.Color('#F5A9B8') },
-                { stop: 0.5, color: new THREE.Color('#FFFFFF') },
-                { stop: 0.75, color: new THREE.Color('#F5A9B8') },
-                { stop: 1, color: new THREE.Color('#5BCEFA') }
-            ];
-            break;
-        case 'bisexual':
-            colorStops = [
-                { stop: 0, color: new THREE.Color('#D60270') },
-                { stop: 0.4, color: new THREE.Color('#D60270') },
-                { stop: 0.5, color: new THREE.Color('#9B4F96') },
-                { stop: 0.6, color: new THREE.Color('#0038A8') },
-                { stop: 1, color: new THREE.Color('#0038A8') }
-            ];
-            break;
-        case 'asexual':
-            colorStops = [
-                { stop: 0, color: new THREE.Color('#000000') },
-                { stop: 0.25, color: new THREE.Color('#A3A3A3') },
-                { stop: 0.5, color: new THREE.Color('#FFFFFF') },
-                { stop: 0.75, color: new THREE.Color('#800080') },
-                { stop: 1, color: new THREE.Color('#800080') }
-            ];
-            break;
-        case 'pansexual':
-            colorStops = [
-                { stop: 0, color: new THREE.Color('#FF218C') },
-                { stop: 0.33, color: new THREE.Color('#FF218C') },
-                { stop: 0.33, color: new THREE.Color('#FFD800') },
-                { stop: 0.66, color: new THREE.Color('#FFD800') },
-                { stop: 0.66, color: new THREE.Color('#21B1FF') },
-                { stop: 1, color: new THREE.Color('#21B1FF') }
-            ];
-            break;
-        case 'lesbian':
-            colorStops = [
-                { stop: 0, color: new THREE.Color('#D62900') },
-                { stop: 0.25, color: new THREE.Color('#FF9B55') },
-                { stop: 0.5, color: new THREE.Color('#FFFFFF') },
-                { stop: 0.75, color: new THREE.Color('#D462A6') },
-                { stop: 1, color: new THREE.Color('#A40062') }
-            ];
-            break;
-        case 'gay':
-            colorStops = [
-                { stop: 0, color: new THREE.Color('#078D70') },
-                { stop: 0.2, color: new THREE.Color('#26CEAA') },
-                { stop: 0.4, color: new THREE.Color('#98E8C1') },
-                { stop: 0.6, color: new THREE.Color('#7BADE2') },
-                { stop: 0.8, color: new THREE.Color('#5049CC') },
-                { stop: 1, color: new THREE.Color('#3D1A78') }
-            ];
-            break;
-        default:
-            // Fallback to solid color if gradient not recognized
-            gradientType = null;
-    }
-    
-    if (colorStops) {
-        // Apply vertex colors based on Y position
-        const colors = [];
-        const positions = textGeometry.attributes.position;
-        
-        for (let i = 0; i < positions.count; i++) {
-            const y = positions.getY(i);
-            const normalizedY = 1 - ((y - minY) / textHeight);
-            
-            let color;
-            if (normalizedY <= colorStops[0].stop) {
-                color = colorStops[0].color.clone();
-            } else if (normalizedY >= colorStops[colorStops.length - 1].stop) {
-                color = colorStops[colorStops.length - 1].color.clone();
-            } else {
-                for (let j = 0; j < colorStops.length - 1; j++) {
-                    if (normalizedY >= colorStops[j].stop && normalizedY <= colorStops[j + 1].stop) {
-                        const t = (normalizedY - colorStops[j].stop) / (colorStops[j + 1].stop - colorStops[j].stop);
-                        color = colorStops[j].color.clone().lerp(colorStops[j + 1].color, t);
+            if (gradientType) {
+                // Use vertex colors for gradients
+                const bbox = textGeometry.boundingBox;
+                const textHeight = bbox.max.y - bbox.min.y;
+                const minY = bbox.min.y;
+                
+                // Get gradient colors
+                let colorStops;
+                switch(gradientType) {
+                    case 'rainbow':
+                        colorStops = [
+                            { stop: 0, color: new THREE.Color('#E40303') },
+                            { stop: 0.2, color: new THREE.Color('#FF8C00') },
+                            { stop: 0.4, color: new THREE.Color('#FFED00') },
+                            { stop: 0.6, color: new THREE.Color('#008026') },
+                            { stop: 0.8, color: new THREE.Color('#24408E') },
+                            { stop: 1, color: new THREE.Color('#732982') }
+                        ];
                         break;
+                    case 'trans':
+                        colorStops = [
+                            { stop: 0, color: new THREE.Color('#5BCEFA') },
+                            { stop: 0.25, color: new THREE.Color('#F5A9B8') },
+                            { stop: 0.5, color: new THREE.Color('#FFFFFF') },
+                            { stop: 0.75, color: new THREE.Color('#F5A9B8') },
+                            { stop: 1, color: new THREE.Color('#5BCEFA') }
+                        ];
+                        break;
+                    case 'bisexual':
+                        colorStops = [
+                            { stop: 0, color: new THREE.Color('#D60270') },
+                            { stop: 0.4, color: new THREE.Color('#D60270') },
+                            { stop: 0.5, color: new THREE.Color('#9B4F96') },
+                            { stop: 0.6, color: new THREE.Color('#0038A8') },
+                            { stop: 1, color: new THREE.Color('#0038A8') }
+                        ];
+                        break;
+                    case 'asexual':
+                        colorStops = [
+                            { stop: 0, color: new THREE.Color('#000000') },
+                            { stop: 0.25, color: new THREE.Color('#A3A3A3') },
+                            { stop: 0.5, color: new THREE.Color('#FFFFFF') },
+                            { stop: 0.75, color: new THREE.Color('#800080') },
+                            { stop: 1, color: new THREE.Color('#800080') }
+                        ];
+                        break;
+                    case 'pansexual':
+                        colorStops = [
+                            { stop: 0, color: new THREE.Color('#FF218C') },
+                            { stop: 0.33, color: new THREE.Color('#FF218C') },
+                            { stop: 0.33, color: new THREE.Color('#FFD800') },
+                            { stop: 0.66, color: new THREE.Color('#FFD800') },
+                            { stop: 0.66, color: new THREE.Color('#21B1FF') },
+                            { stop: 1, color: new THREE.Color('#21B1FF') }
+                        ];
+                        break;
+                    case 'lesbian':
+                        colorStops = [
+                            { stop: 0, color: new THREE.Color('#D62900') },
+                            { stop: 0.25, color: new THREE.Color('#FF9B55') },
+                            { stop: 0.5, color: new THREE.Color('#FFFFFF') },
+                            { stop: 0.75, color: new THREE.Color('#D462A6') },
+                            { stop: 1, color: new THREE.Color('#A40062') }
+                        ];
+                        break;
+                    case 'gay':
+                        colorStops = [
+                            { stop: 0, color: new THREE.Color('#078D70') },
+                            { stop: 0.2, color: new THREE.Color('#26CEAA') },
+                            { stop: 0.4, color: new THREE.Color('#98E8C1') },
+                            { stop: 0.6, color: new THREE.Color('#7BADE2') },
+                            { stop: 0.8, color: new THREE.Color('#5049CC') },
+                            { stop: 1, color: new THREE.Color('#3D1A78') }
+                        ];
+                        break;
+                    default:
+                        gradientType = null;
+                }
+                
+                if (colorStops) {
+                    // Apply vertex colors based on Y position
+                    const colors = [];
+                    const positions = textGeometry.attributes.position;
+                    
+                    for (let i = 0; i < positions.count; i++) {
+                        const y = positions.getY(i);
+                        const normalizedY = 1 - ((y - minY) / textHeight);
+                        
+                        let color;
+                        if (normalizedY <= colorStops[0].stop) {
+                            color = colorStops[0].color.clone();
+                        } else if (normalizedY >= colorStops[colorStops.length - 1].stop) {
+                            color = colorStops[colorStops.length - 1].color.clone();
+                        } else {
+                            for (let j = 0; j < colorStops.length - 1; j++) {
+                                if (normalizedY >= colorStops[j].stop && normalizedY <= colorStops[j + 1].stop) {
+                                    const t = (normalizedY - colorStops[j].stop) / (colorStops[j + 1].stop - colorStops[j].stop);
+                                    color = colorStops[j].color.clone().lerp(colorStops[j + 1].color, t);
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        colors.push(color.r, color.g, color.b);
                     }
+                    
+                    textGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+                    
+                    materials = new THREE.MeshPhongMaterial({
+                        vertexColors: true,
+                        shininess: 100,
+                        specular: 0x444444
+                    });
                 }
             }
-            
-            colors.push(color.r, color.g, color.b);
-        }
-        
-        textGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-        
-        materials = new THREE.MeshPhongMaterial({
-            vertexColors: true,
-            shininess: 100,
-            specular: 0x444444
-        });
-    }
-}
 
-if (!materials) {
-    // Solid color materials
-    const frontColor = new THREE.Color(color);
-    const sideColor = new THREE.Color(color).multiplyScalar(0.5);
-    
-    materials = [
-        new THREE.MeshPhongMaterial({ 
-            color: frontColor,
-            shininess: 100,
-            specular: 0x444444
-        }),
-        new THREE.MeshPhongMaterial({ 
-            color: sideColor,
-            shininess: 30 
-        })
-    ];
-}
+            if (!materials) {
+                // Solid color materials
+                const frontColor = new THREE.Color(color);
+                const sideColor = new THREE.Color(color).multiplyScalar(0.5);
+                
+                materials = [
+                    new THREE.MeshPhongMaterial({ 
+                        color: frontColor,
+                        shininess: 100,
+                        specular: 0x444444
+                    }),
+                    new THREE.MeshPhongMaterial({ 
+                        color: sideColor,
+                        shininess: 30 
+                    })
+                ];
+            }
 
-            // CREATE THE MESH - INSIDE createText() function
+            // CREATE THE MESH
             textMesh = new THREE.Mesh(textGeometry, materials);
             scene.add(textMesh);
             
@@ -346,17 +344,14 @@ if (!materials) {
                     window.frameCount = 0;
                     window.lastFpsTime = currentTime;
                 }
-            } else {
-                const fpsDisplay = document.getElementById('fps');
-                if (fpsDisplay) fpsDisplay.style.display = 'none';
             }
             
-            // Update position - EXACTLY matching the preview code
+            // Update position
             x += velocityX * BASE_SPEED;
             y += velocityY * BASE_SPEED;
             
             // Calculate visible bounds
-            const distance = camera.position.z; // Fixed distance since z=0
+            const distance = camera.position.z;
             const vFOV = camera.fov * Math.PI / 180;
             const visibleHeight = 2 * Math.tan(vFOV / 2) * distance;
             const visibleWidth = visibleHeight * camera.aspect;
@@ -369,15 +364,13 @@ if (!materials) {
                 const textHeight = (bbox.max.y - bbox.min.y) / 2;
                 const textDepth = (bbox.max.z - bbox.min.z) / 2;
                 
-                // Calculate 3D diagonal (worst case when rotated in any direction)
                 textDiagonal = Math.sqrt(textWidth * textWidth + textHeight * textHeight + textDepth * textDepth);
             }
             
-            // Use bounds minus diagonal (accounts for rotation and depth)
             const boundsX = (visibleWidth / 2) - textDiagonal;
             const boundsY = (visibleHeight / 2) - textDiagonal;
             
-            // Bounce off boundaries - only X and Y
+            // Bounce off boundaries
             if (x > boundsX || x < -boundsX) {
                 velocityX = -velocityX;
                 x = Math.max(-boundsX, Math.min(boundsX, x));
@@ -388,11 +381,11 @@ if (!materials) {
                 y = Math.max(-boundsY, Math.min(boundsY, y));
             }
             
-            // Apply position - Z is always 0
+            // Apply position
             textMesh.position.set(x, y, 0);
             
-            // Apply rotation based on spin style - EXACTLY matching preview
-            if (window.currentSpin === 'wobble') {
+            // Apply rotation based on spin style
+            if (spinStyle === 'wobble') {
                 wobbleRotation.x += 0.015 * speedMultiplier;
                 wobbleRotation.y += 0.02 * speedMultiplier;
                 wobbleRotation.z += 0.015 * speedMultiplier;
@@ -400,19 +393,16 @@ if (!materials) {
                 textMesh.rotation.x = Math.sin(wobbleRotation.x) * 0.3;
                 textMesh.rotation.y = Math.sin(wobbleRotation.y) * 1.0;
                 textMesh.rotation.z = Math.sin(wobbleRotation.z) * 0.3;
-            } else if (window.currentSpin === 'spin') {
-                // Continuous Y-axis rotation only
+            } else if (spinStyle === 'spin') {
                 textMesh.rotation.y += 0.02 * speedMultiplier;
                 textMesh.rotation.x = 0;
                 textMesh.rotation.z = 0;
-            } else if (window.currentSpin === 'see-saw') {
-                // Rocks back and forth on Z axis only
+            } else if (spinStyle === 'see-saw') {
                 seesawAngle += 0.015 * speedMultiplier;
                 textMesh.rotation.z = Math.sin(seesawAngle) * 0.3;
                 textMesh.rotation.x = 0;
                 textMesh.rotation.y = 0;
-            } else if (window.currentSpin === 'none') {
-                // No rotation at all
+            } else if (spinStyle === 'none') {
                 textMesh.rotation.x = 0;
                 textMesh.rotation.y = 0;
                 textMesh.rotation.z = 0;
@@ -441,16 +431,17 @@ if (!materials) {
 
         // Start animation
         function startAnimation() {
-            // Reset position - no Z movement
+            // Reset position
             x = (Math.random() - 0.5) * 60;
             y = (Math.random() - 0.5) * 40;
-            z = 0; // Always stays at 0
+            z = 0;
             
             const angle = Math.random() * Math.PI * 2;
             velocityX = Math.cos(angle) * 2;
             velocityY = Math.sin(angle) * 2;
-            velocityZ = 0; // No Z velocity
+            velocityZ = 0;
             
+            lastFrameTime = performance.now();
             animate();
         }
 
