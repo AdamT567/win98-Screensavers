@@ -9,8 +9,6 @@ let animationId = null;
 let lastFrameTime = 0;
 
 const BASE_SPEED = 1;
-const TARGET_FPS = 60;
-const FRAME_INTERVAL = 1000 / TARGET_FPS; // 16.67ms for 60fps
 
 window.screensaverInitialized = false;
 window.currentSpin = 'wobble';
