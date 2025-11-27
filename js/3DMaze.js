@@ -1,5 +1,6 @@
 // 3D Maze Screensaver using Three.js
 // Inspired by the classic Windows 95/98 3D Maze screensaver
+console.log('3DMaze.js is loading...');
 
 // FPS limiting
 const TARGET_FPS = 60;
@@ -525,3 +526,5 @@ function stopMazeAnimation() {
 window.initMazeScene = initMazeScene;
 window.startMazeAnimation = startMazeAnimation;
 window.stopMazeAnimation = stopMazeAnimation;
+
+console.log('3DMaze.js exports complete');
