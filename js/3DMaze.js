@@ -356,24 +356,24 @@ function canMove(x, z, direction) {
 
 // Get next move using right-hand rule
 function getNextMove() {
-    const rightDir = (currentDirection + 1) % 4;  // Turn right (clockwise)
-    const leftDir = (currentDirection + 3) % 4;   // Turn left (counterclockwise)
-    const backDir = (currentDirection + 2) % 4;   // Turn around
+    const rightDir = (currentDirection + 1) % 4;
+    const leftDir = (currentDirection + 3) % 4;
+    const backDir = (currentDirection + 2) % 4;
     
-    // Right-hand rule (right-wall follower):
-    // Priority: right, forward, left, back
+    // Right-hand rule: keep your right hand on the wall
+    // Priority: right > forward > left > back
     
-    // 1. Check right - if open, turn right
+    // 1. Try right - turn and move
     if (canMove(playerX, playerZ, rightDir)) {
         return { turn: rightDir, move: true };
     }
     
-    // 2. Check forward - if open, go forward
+    // 2. Try forward - just move
     if (canMove(playerX, playerZ, currentDirection)) {
         return { turn: currentDirection, move: true };
     }
     
-    // 3. Check left - if open, turn left
+    // 3. Try left - turn and move
     if (canMove(playerX, playerZ, leftDir)) {
         return { turn: leftDir, move: true };
     }
@@ -431,11 +431,23 @@ function animateMaze() {
             currentDirection = Math.round(targetAngle / (Math.PI / 2)) % 4;
             if (currentDirection < 0) currentDirection += 4;
             updateCameraPosition();
+            
+            // After turning, try to move if path is clear
+            if (canMove(playerX, playerZ, currentDirection)) {
+                isMoving = true;
+                moveProgress = 0;
+            }
+        }
+            
+            // MISSING: Check if we should move after turning!
+            // Without this, it just turns again next frame
+            
         } else {
             playerAngle += Math.sign(normalizedDiff) * turnSpeed;
             updateCameraPosition();
         }
     }
+        
     // Handle moving
     else if (isMoving) {
         moveProgress += moveSpeed;
