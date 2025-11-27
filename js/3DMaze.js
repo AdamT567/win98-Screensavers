@@ -1,9 +1,6 @@
 // 3D Maze Screensaver using Three.js
 // Inspired by the classic Windows 95/98 3D Maze screensaver
 
-let animationFrame = null;
-let lastFrameTime = 0; // ADD THIS LINE
-
 // FPS limiting
 const TARGET_FPS = 60;
 const FRAME_INTERVAL = 1000 / TARGET_FPS;
@@ -23,7 +20,8 @@ let playerZ = 0;
 let playerAngle = 0;
 let moveSpeed = 0.08;
 let turnSpeed = 0.03;
-let animationFrame = null;
+let mazeAnimationFrame = null;
+let mazeLastFrameTime = 0;
 
 // Navigation state
 let isMoving = false;
@@ -118,6 +116,13 @@ function initMazeScene() {
     if (!canvas) {
         console.error('Canvas not found');
         return;
+    }
+    
+    // Clear any existing scene
+    if (mazeScene) {
+        while(mazeScene.children.length > 0) {
+            mazeScene.remove(mazeScene.children[0]);
+        }
     }
     
     // Scene
@@ -343,7 +348,6 @@ function updateCameraPosition() {
     
     mazeCamera.position.x = worldX;
     mazeCamera.position.z = worldZ;
-    // Fixed: Camera should look in the direction of movement
     mazeCamera.rotation.y = -playerAngle;
 }
 
@@ -353,13 +357,14 @@ function canMove(x, z, direction) {
     return maze[z][x][direction] === 0;
 }
 
-// pathfinding algorithm
+// Get next move using right-hand rule
 function getNextMove() {
     const rightDir = (currentDirection + 1) % 4;  // Turn right (clockwise)
     const leftDir = (currentDirection + 3) % 4;   // Turn left (counterclockwise)
+    const backDir = (currentDirection + 2) % 4;   // Turn around
     
     // Right-hand rule (right-wall follower):
-    // Priority: right, forward, left, then turn right again
+    // Priority: right, forward, left, back
     
     // 1. Check right - if open, turn right
     if (canMove(playerX, playerZ, rightDir)) {
@@ -376,24 +381,27 @@ function getNextMove() {
         return { turn: leftDir, move: true };
     }
     
-    // 4. Dead end - turn right (will eventually face an open direction)
-    return { turn: rightDir, move: false };
+    // 4. Dead end - turn around
+    return { turn: backDir, move: false };
 }
 
 // Animation loop
 function animateMaze() {
-    animationFrame = requestAnimationFrame(animateMaze);
+    mazeAnimationFrame = requestAnimationFrame(animateMaze);
     
-    if (!mazeCamera || !mazeRenderer || !mazeScene) return;
+    if (!mazeCamera || !mazeRenderer || !mazeScene) {
+        console.warn('Maze components not ready');
+        return;
+    }
 
     const currentTime = performance.now();
-    const deltaTime = currentTime - lastFrameTime;
+    const deltaTime = currentTime - mazeLastFrameTime;
     
     if (deltaTime < FRAME_INTERVAL) {
         return;
     }
     
-    lastFrameTime = currentTime - (deltaTime % FRAME_INTERVAL);
+    mazeLastFrameTime = currentTime - (deltaTime % FRAME_INTERVAL);
     
     // FPS Counter (only if debug mode enabled)
     if (window.mazeDebugMode) {
@@ -426,13 +434,6 @@ function animateMaze() {
             currentDirection = Math.round(targetAngle / (Math.PI / 2)) % 4;
             if (currentDirection < 0) currentDirection += 4;
             updateCameraPosition();
-            
-            // After turning completes, check if we should move forward
-            if (canMove(playerX, playerZ, currentDirection)) {
-                isMoving = true;
-                moveProgress = 0;
-            }
-            // If can't move forward after turning, next frame will turn again
         } else {
             playerAngle += Math.sign(normalizedDiff) * turnSpeed;
             updateCameraPosition();
@@ -503,18 +504,20 @@ function onMazeWindowResize() {
 
 // Start maze animation
 function startMazeAnimation() {
-    if (animationFrame) {
-        cancelAnimationFrame(animationFrame);
+    console.log('Starting maze animation...');
+    if (mazeAnimationFrame) {
+        cancelAnimationFrame(mazeAnimationFrame);
     }
-    lastFrameTime = performance.now(); // INITIALIZE THE TIMER
+    mazeLastFrameTime = performance.now();
     animateMaze();
 }
 
 // Stop maze animation
 function stopMazeAnimation() {
-    if (animationFrame) {
-        cancelAnimationFrame(animationFrame);
-        animationFrame = null;
+    console.log('Stopping maze animation...');
+    if (mazeAnimationFrame) {
+        cancelAnimationFrame(mazeAnimationFrame);
+        mazeAnimationFrame = null;
     }
 }
 
