@@ -2,6 +2,10 @@
 
 let currentScreensaver = '3dtext'; // Track which screensaver is active
 
+// Global FPS limiting for all screensavers
+window.TARGET_FPS = 60;
+window.FRAME_INTERVAL = 1000 / window.TARGET_FPS;
+
 // Clock functionality
 function updateClock() {
     const now = new Date();
