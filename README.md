@@ -6,12 +6,12 @@ This project will emulate a windows 98 desktop UI and allow users to select, con
 
 Currently working:
 
--UI
++/-UI
 
--3D Text
++3D Text = 1.0 final
 
 
-------------------------------------------
+====================================================================================================
 
 To-DO:
 
