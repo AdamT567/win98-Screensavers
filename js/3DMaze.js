@@ -394,11 +394,11 @@ function animateMaze() {
     const currentTime = performance.now();
     const deltaTime = currentTime - mazeLastFrameTime;
     
-    if (deltaTime < FRAME_INTERVAL) {
+    if (deltaTime < window.FRAME_INTERVAL) {
         return;
     }
     
-    mazeLastFrameTime = currentTime - (deltaTime % FRAME_INTERVAL);
+    mazeLastFrameTime = currentTime - (deltaTime % window.FRAME_INTERVAL);
     
     // FPS Counter (only if debug mode enabled)
     if (window.mazeDebugMode) {
