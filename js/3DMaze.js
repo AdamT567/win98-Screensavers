@@ -27,6 +27,12 @@ let targetAngle = 0;
 let moveProgress = 0;
 let currentDirection = 0; // 0: North, 1: East, 2: South, 3: West
 
+// Start and end positions
+let startX = 0;
+let startZ = 0;
+let endX = 0;
+let endZ = 0;
+
 // Texture settings
 let wallTextureType = 'brick';
 let floorTextureType = 'wood';
@@ -157,6 +163,13 @@ function initMazeScene() {
     // Generate and build maze
     console.log('Generating maze...');
     maze = generateMaze(mazeSize);
+    
+    // Set start and end positions
+    startX = 0;
+    startZ = 0;
+    endX = mazeSize - 1;
+    endZ = mazeSize - 1;
+    
     buildMazeGeometry();
     
     // Find starting position (open cell)
@@ -190,6 +203,12 @@ function buildMazeGeometry() {
         map: ceilingTexture,
         side: THREE.DoubleSide
     });
+    
+    // Create marker materials
+    const windowsLogoTexture = createWindowsLogoTexture();
+    const smileyTexture = createSmileyTexture();
+    const logoMaterial = new THREE.MeshBasicMaterial({ map: windowsLogoTexture, side: THREE.DoubleSide });
+    const smileyMaterial = new THREE.MeshBasicMaterial({ map: smileyTexture, side: THREE.DoubleSide });
     
     // Build walls
     for (let z = 0; z < mazeSize; z++) {
@@ -240,6 +259,24 @@ function buildMazeGeometry() {
             floor.rotation.x = -Math.PI / 2;
             floor.position.set(posX, 0, posZ);
             mazeScene.add(floor);
+            
+            // Add start marker (Windows logo)
+            if (x === startX && z === startZ) {
+                const logoGeometry = new THREE.PlaneGeometry(cellSize * 0.8, cellSize * 0.8);
+                const logo = new THREE.Mesh(logoGeometry, logoMaterial);
+                logo.rotation.x = -Math.PI / 2;
+                logo.position.set(posX, 0.1, posZ);
+                mazeScene.add(logo);
+            }
+            
+            // Add end marker (Smiley face)
+            if (x === endX && z === endZ) {
+                const smileyGeometry = new THREE.PlaneGeometry(cellSize * 0.8, cellSize * 0.8);
+                const smiley = new THREE.Mesh(smileyGeometry, smileyMaterial);
+                smiley.rotation.x = -Math.PI / 2;
+                smiley.position.set(posX, 0.1, posZ);
+                mazeScene.add(smiley);
+            }
             
             // Ceiling
             const ceilingGeometry = new THREE.PlaneGeometry(cellSize, cellSize);
@@ -317,23 +354,94 @@ function createCeilingTexture() {
     return texture;
 }
 
+// Create Windows logo texture
+function createWindowsLogoTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    
+    // White background
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, 128, 128);
+    
+    // Draw Windows 95 logo (4 colored squares)
+    const centerX = 64;
+    const centerY = 64;
+    const size = 25;
+    const gap = 4;
+    
+    // Red (top-left)
+    ctx.fillStyle = '#F00';
+    ctx.fillRect(centerX - size - gap/2, centerY - size - gap/2, size, size);
+    
+    // Green (top-right)
+    ctx.fillStyle = '#0F0';
+    ctx.fillRect(centerX + gap/2, centerY - size - gap/2, size, size);
+    
+    // Blue (bottom-left)
+    ctx.fillStyle = '#00F';
+    ctx.fillRect(centerX - size - gap/2, centerY + gap/2, size, size);
+    
+    // Yellow (bottom-right)
+    ctx.fillStyle = '#FF0';
+    ctx.fillRect(centerX + gap/2, centerY + gap/2, size, size);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    return texture;
+}
+
+// Create smiley face texture
+function createSmileyTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    
+    // Yellow circle
+    ctx.fillStyle = '#FFFF00';
+    ctx.beginPath();
+    ctx.arc(64, 64, 50, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Black outline
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // Eyes
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(50, 50, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(78, 50, 5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Smile
+    ctx.beginPath();
+    ctx.arc(64, 64, 30, 0.2 * Math.PI, 0.8 * Math.PI);
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    return texture;
+}
+
 // Find valid starting position
 function findStartPosition() {
-    // Find a cell with at least one open wall
-    for (let z = 0; z < mazeSize; z++) {
-        for (let x = 0; x < mazeSize; x++) {
-            const cell = maze[z][x];
-            // Find first direction with no wall
-            for (let dir = 0; dir < 4; dir++) {
-                if (cell[dir] === 0) {
-                    playerX = x;
-                    playerZ = z;
-                    currentDirection = dir;
-                    playerAngle = dir * Math.PI / 2;
-                    updateCameraPosition();
-                    return;
-                }
-            }
+    // Start at the start marker position
+    playerX = startX;
+    playerZ = startZ;
+    
+    // Find first direction with no wall
+    const cell = maze[startZ][startX];
+    for (let dir = 0; dir < 4; dir++) {
+        if (cell[dir] === 0) {
+            currentDirection = dir;
+            playerAngle = dir * Math.PI / 2;
+            updateCameraPosition();
+            return;
         }
     }
 }
@@ -437,16 +545,11 @@ function animateMaze() {
                 isMoving = true;
                 moveProgress = 0;
             }
-            
-            // MISSING: Check if we should move after turning!
-            // Without this, it just turns again next frame
-            
         } else {
             playerAngle += Math.sign(normalizedDiff) * turnSpeed;
             updateCameraPosition();
         }
     }
-        
     // Handle moving
     else if (isMoving) {
         moveProgress += moveSpeed;
@@ -466,6 +569,16 @@ function animateMaze() {
             playerZ += dir.dz;
             
             updateCameraPosition();
+            
+            // Check if reached the end
+            if (playerX === endX && playerZ === endZ) {
+                console.log('Maze completed! Generating new maze...');
+                stopMazeAnimation();
+                setTimeout(() => {
+                    initMazeScene();
+                    startMazeAnimation();
+                }, 1000);
+            }
         } else {
             const dirs = [
                 { dx: 0, dz: -1 },
