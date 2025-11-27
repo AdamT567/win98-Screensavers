@@ -437,7 +437,6 @@ function animateMaze() {
                 isMoving = true;
                 moveProgress = 0;
             }
-        }
             
             // MISSING: Check if we should move after turning!
             // Without this, it just turns again next frame
