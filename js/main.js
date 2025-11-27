@@ -223,13 +223,39 @@ function handlePreview() {
 
 // Close preview
 function closePreview() {
+    console.log('Closing preview, currentScreensaver:', currentScreensaver);
     document.getElementById('previewOverlay').classList.remove('active');
     
     if (currentScreensaver === '3dtext') {
-        window.stopScreensaverAnimation();
+        if (window.stopScreensaverAnimation) {
+            window.stopScreensaverAnimation();
+        }
     } else if (currentScreensaver === '3dmaze') {
-        window.stopMazeAnimation();
+        if (window.stopMazeAnimation) {
+            window.stopMazeAnimation();
+        }
     }
+    
+    // Clear the canvas
+    const canvas = document.getElementById('canvas3d');
+    if (canvas) {
+        const gl = canvas.getContext('webgl') || canvas.getContext('webgl2');
+        if (gl) {
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        }
+    }
+}
+
+// Clear canvas manually
+function clearCanvas() {
+    const canvas = document.getElementById('canvas3d');
+    if (canvas) {
+        const gl = canvas.getContext('webgl') || canvas.getContext('webgl2');
+        if (gl) {
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        }
+    }
+    console.log('Canvas cleared manually');
 }
 
 // Texture window management
