@@ -22,7 +22,6 @@
             display: block !important;
         }
     </style>
-    <!-- Three.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
@@ -50,6 +49,7 @@
         let moveSpeed = 0.08 * moveSpeedParam;
         let turnSpeed = 0.03 * moveSpeedParam;
         let animationFrame = null;
+        let lastFrameTime = 0;
         
         // Navigation state
         let isMoving = false;
@@ -57,6 +57,9 @@
         let targetAngle = 0;
         let moveProgress = 0;
         let currentDirection = 0;
+        
+        const TARGET_FPS = 60;
+        const FRAME_INTERVAL = 1000 / TARGET_FPS;
         
         // Maze generation
         function generateMaze(size) {
@@ -96,7 +99,6 @@
                 return neighbors;
             }
             
-            // Use timestamp for random seed
             let currentX = Math.floor(Math.random() * size);
             let currentZ = Math.floor(Math.random() * size);
             visited.add(cellKey(currentX, currentZ));
@@ -123,6 +125,7 @@
         
         // Initialize scene
         function initMazeScene() {
+            console.log('Initializing maze scene...');
             const canvas = document.getElementById('canvas3d');
             
             mazeScene = new THREE.Scene();
@@ -149,6 +152,7 @@
             findStartPosition();
             
             window.addEventListener('resize', onMazeWindowResize, false);
+            console.log('Maze scene initialized successfully');
         }
         
         // Create textures
@@ -297,7 +301,6 @@
             const worldZ = (playerZ - mazeSize / 2) * cellSize;
             mazeCamera.position.x = worldX;
             mazeCamera.position.z = worldZ;
-            // Fixed: Camera should look in the direction of movement
             mazeCamera.rotation.y = -playerAngle;
         }
         
@@ -308,33 +311,28 @@
         
         function getNextMove() {
             const dirs = [
-                { dx: 0, dz: -1 }, // North
-                { dx: 1, dz: 0 },  // East
-                { dx: 0, dz: 1 },  // South
-                { dx: -1, dz: 0 }  // West
+                { dx: 0, dz: -1 },
+                { dx: 1, dz: 0 },
+                { dx: 0, dz: 1 },
+                { dx: -1, dz: 0 }
             ];
             
-            // Right-hand rule: try right, then forward, then left, then back
             const rightDir = (currentDirection + 1) % 4;
             const leftDir = (currentDirection + 3) % 4;
             const backDir = (currentDirection + 2) % 4;
             
-            // Try turning right and moving
             if (canMove(playerX, playerZ, rightDir)) {
                 return { turn: rightDir, move: true };
             }
             
-            // Try moving forward
             if (canMove(playerX, playerZ, currentDirection)) {
                 return { turn: currentDirection, move: true };
             }
             
-            // Try turning left and moving
             if (canMove(playerX, playerZ, leftDir)) {
                 return { turn: leftDir, move: true };
             }
             
-            // Turn around (no move)
             return { turn: backDir, move: false };
         }
         
@@ -342,6 +340,15 @@
             animationFrame = requestAnimationFrame(animateMaze);
             
             if (!mazeCamera || !mazeRenderer || !mazeScene) return;
+            
+            const currentTime = performance.now();
+            const deltaTime = currentTime - lastFrameTime;
+            
+            if (deltaTime < FRAME_INTERVAL) {
+                return;
+            }
+            
+            lastFrameTime = currentTime - (deltaTime % FRAME_INTERVAL);
             
             if (isTurning) {
                 const angleDiff = targetAngle - playerAngle;
@@ -416,7 +423,9 @@
         
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded - starting maze');
             initMazeScene();
+            lastFrameTime = performance.now();
             animateMaze();
         });
     </script>
