@@ -322,12 +322,12 @@ function animateScreensaver() {
     const currentTime = performance.now();
     const deltaTime = currentTime - lastFrameTime;
     
-    if (deltaTime < FRAME_INTERVAL) {
+    if (deltaTime < window.FRAME_INTERVAL) {
         animationId = requestAnimationFrame(animateScreensaver);
         return;
     }
     
-    lastFrameTime = currentTime - (deltaTime % FRAME_INTERVAL);
+    lastFrameTime = currentTime - (deltaTime % window.FRAME_INTERVAL);
     
     // FPS Counter (only if debug mode enabled)
     if (window.debugMode) {
