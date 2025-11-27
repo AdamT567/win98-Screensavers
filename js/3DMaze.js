@@ -2,10 +2,6 @@
 // Inspired by the classic Windows 95/98 3D Maze screensaver
 console.log('3DMaze.js is loading...');
 
-// FPS limiting
-const TARGET_FPS = 60;
-const FRAME_INTERVAL = 1000 / TARGET_FPS;
-
 // Debug mode
 window.mazeDebugMode = false;
 
